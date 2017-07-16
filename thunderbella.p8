@@ -2,6 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
 -- thunder bella the cloud chaser by evil paper
+-- by evilpaper, funky chiptune by ..
 
 -- sfx
 sfx_rain=0
@@ -114,7 +115,7 @@ end
 scene.update[0] = function()
   if x_btn then
    scene.cycle(1)
-   sfx(17)
+   sfx(sfx_game_on)
   end
 end
 
@@ -144,7 +145,7 @@ end
 scene.update[2] = function()
   update_rockets()
   if t>60 and x_btn then
-    sfx(17) --22
+    sfx(sfx_game_over)
     _init()
     scene.cycle(1)
   end
@@ -217,7 +218,6 @@ function check_collision_rocket_vs_boss()
        boss.state="laughing"
        reset_thunderbolts()
        create_treat(boss.x,boss.y,flr(rnd(4)+4))
-       sfx(26)
        scene.cycle(3)
      end
     end
@@ -240,9 +240,9 @@ function check_collision_player_vs_treat()
      create_popup(p.x,p.y)
      if (p.lives<3) then
        p.lives=p.lives+1
-       sfx(1)
+       sfx(sfx_extra_life)
      else
-       sfx(24)
+       sfx(sfx_eat_treat)
      end
      del(treats,treat)
   end
@@ -250,7 +250,7 @@ function check_collision_player_vs_treat()
 end
 
 function player_hit()
- sfx(5)
+ sfx(sfx_p_stun)
  shake+=1
  p.lives-=1
  change_state(p,"electric")
@@ -318,7 +318,7 @@ function shoot_rocket()
 end
 
 function create_splash(x,y)
- sfx(6)
+ sfx(sfx_bounce)
  for i=1, rnd(10)+6 do
   local splash = {
    x=x,
@@ -360,7 +360,7 @@ function create_thunderbolt()
  }
  if t%2 == 0 then thunderbolt.dx=-thunderbolt.dx end
  add(thunderbolts,thunderbolt)
- sfx(18)
+ sfx(sfx_thunder)
 end
 
 function create_rocket()
@@ -375,11 +375,11 @@ function create_rocket()
   fire={}
  }
  add(rockets,rocket)
- sfx(19)
+ sfx(sfx_rocket)
 end
 
 function create_firework(_x,_y)
- sfx(18)
+ sfx(sfx_fireworks)
  for i=0,50 do
   create_firework_particles(_x,_y)
  end
@@ -410,7 +410,7 @@ function create_treat(x,y,quantity)
     }
     add(treats, treat)
   end
- sfx(21)
+ sfx(sfx_create_treat)
 end
 
 function create_popup(x,y)
@@ -606,7 +606,6 @@ function update_boss()
         boss.ddx=-boss.ddx
       end
       boss.state="moving"
-      sfx(3)
     end
   end
 
@@ -668,13 +667,11 @@ function update_player()
    p.sprite=start_frame+flr((t/animation_speed)%4)*2
    if (left_btn or right_btn) then
      change_state(p,"walking")
-     --sfx(25)
    end
    if (x_btn) change_state(p,"shooting")
   end
 
   if p.state=="walking" then
-  --sfx(10)
    if (left_btn) p.direction=-1
    if (right_btn) p.direction=1
    local start_frame=12
@@ -705,9 +702,9 @@ function update_player()
     if p.lives>0 then
      change_state(p,"idle")
      boss.state="idle"
-     sfx(9)
+     sfx(sfx_p_recover)
     else
-     sfx(7)
+     sfx(sfx_p_knocked_down)
      change_state(p,"falling")
     end
     p.t=0
@@ -1325,4 +1322,3 @@ __music__
 00 00000000
 00 00000000
 00 00000000
-
