@@ -36,7 +36,8 @@ function _init()
   sprite=0,
   direction=0,
   state="idle",
-  hitbox={x=2,y=5,w=12,h=10}
+  hitbox={x=2,y=5,w=12,h=10},
+  flashing_timer=0
  }
 
  boss = {
@@ -57,7 +58,7 @@ function _init()
   right_pupil_y=6,
   hitbox={x=0,y=5,w=32,h=8},
   state="idle",
-  flash=nil
+  flashing_timer=0
  }
 
  cloud = {
@@ -212,7 +213,7 @@ function check_collision_rocket_vs_boss()
     if collide(rocket,boss) then
      create_firework(rocket.x,rocket.y)
      del(rockets,rocket)
-     boss.flash=30
+     boss.flashing_timer=30
      boss.lives-=1
      if boss.lives==0 then
        boss.state="laughing"
@@ -701,6 +702,7 @@ function update_player()
    if p.t > 70 then
     if p.lives>0 then
      change_state(p,"idle")
+     p.flashing_timer=30
      boss.state="idle"
      sfx(sfx_p_recover)
     else
@@ -846,7 +848,13 @@ function draw_fireworks()
 end
 
 function draw_player()
+  if (isFlashing(p)) then
+    for i=1,15 do
+      pal(i,7)
+    end
+  end
   spr(p.sprite,p.x,p.y,2,2,p.direction==-1)
+  pal()
 end
 
 function draw_background_rain()
@@ -887,39 +895,31 @@ function draw_cloud()
   spr(cloud.sprite,118,18+cloud.y,2,1)
 end
 
-function draw_cloud_eyes()
-   if boss.flash then
-    boss.flash-=1
-     if (abs(t % 6) <= 3) then
-      for i=1,15 do
-       pal(i,7)
-       -- spr(boss.sprite,boss.x,boss.y,4,1)
-       spr(boss.left_eye_sprite,boss.x,boss.y,2,1)
-       spr(boss.right_eye_sprite,boss.x+16,boss.y,2,1,true)
-       spr(boss.left_pupil_sprite,boss.left_pupil_x,boss.left_pupil_y)
-       spr(boss.right_pupil_sprite,boss.right_pupil_x,boss.right_pupil_y)
-      end
-      pal()
-     else
-      -- spr(boss.sprite,boss.x,boss.y,4,1)
-      spr(boss.left_eye_sprite,boss.x,boss.y,2,1)
-      spr(boss.right_eye_sprite,boss.x+16,boss.y,2,1,true)
-      spr(boss.left_pupil_sprite,boss.left_pupil_x,boss.left_pupil_y)
-      spr(boss.right_pupil_sprite,boss.right_pupil_x,boss.right_pupil_y)
-     end
+function draw_boss_eyes()
+  spr(boss.left_eye_sprite,boss.x,boss.y,2,1)
+  spr(boss.right_eye_sprite,boss.x+16,boss.y,2,1,true)
+  spr(boss.left_pupil_sprite,boss.left_pupil_x,boss.left_pupil_y)
+  spr(boss.right_pupil_sprite,boss.right_pupil_x,boss.right_pupil_y)
+end
 
-    if boss.flash==0 then
-     boss.flash=nil
+function isFlashing(thing)
+  if (thing.flashing_timer>0) and (abs(t % 12) < 6) then
+    thing.flashing_timer=thing.flashing_timer-1
+    return true
+  else
+    return false
+  end
+end
+
+function draw_boss()
+  if (isFlashing(boss)) then
+    for i=1,15 do
+      pal(i,7)
     end
-
-   else
-    -- spr(boss.sprite,boss.x,boss.y,4,1)
-    spr(boss.left_eye_sprite,boss.x,boss.y,2,1)
-    spr(boss.right_eye_sprite,boss.x+16,boss.y,2,1,true)
-    spr(boss.left_pupil_sprite,boss.left_pupil_x,boss.left_pupil_y)
-    spr(boss.right_pupil_sprite,boss.right_pupil_x,boss.right_pupil_y)
-   end
-   draw_puffts()
+  end
+  draw_boss_eyes()
+  pal()
+  draw_puffts()
 end
 
 function draw_boss_laugh()
@@ -934,7 +934,6 @@ function draw_boss_laugh()
       spr(46,boss.x+8,boss.y+8,1,1)
       spr(46,boss.x+16,boss.y+8,1,1,true)
     end
-
   end
 end
 
@@ -1014,7 +1013,7 @@ function _draw()
  draw_foreground_rain()
  scene.drawing()
  draw_cloud()
- draw_cloud_eyes()
+ draw_boss()
  draw_thunderbolts()
  draw_splash()
  draw_player()
