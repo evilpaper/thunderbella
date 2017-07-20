@@ -228,7 +228,7 @@ end
 
 function check_collision_thunderbolt_vs_player()
  for thunderbolt in all(thunderbolts) do
-  if collide(thunderbolt,p) and p.state!=("electric") then
+  if collide(thunderbolt,p) and p.state!=("electric") and p.flashing_timer==0 then
      del(thunderbolts,thunderbolt)
      player_hit()
   end
@@ -702,7 +702,7 @@ function update_player()
    if p.t > 70 then
     if p.lives>0 then
      change_state(p,"idle")
-     p.flashing_timer=30
+     p.flashing_timer=60
      boss.state="idle"
      sfx(sfx_p_recover)
     else
