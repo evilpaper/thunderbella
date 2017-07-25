@@ -22,65 +22,65 @@ sfx_extra_life=12
 -- initialize game ------------
 function _init()
  t = 0
- music(00)
  shake = 0
  time_since_last_thunderbolt=0
  max_number_of_thunderbolts=2
  time_to_next_thunderbolt=120
 
- p = {
-  x=56,
-  y=112,
-  t=0,
-  lives=3,
-  sprite=0,
-  direction=0,
-  state="idle",
-  hitbox={x=2,y=5,w=12,h=10},
-  flashing_timer=0
- }
-
  boss = {
-  x=51,
-  y=6,
-  t=0,
-  lives=100,
-  dx=0.4,
-  ddx=0.05,
-  left_eye_sprite=36,
-  right_eye_sprite=36,
-  destination=51,
-  left_pupil_sprite=39,
-  left_pupil_x=53,
-  left_pupil_y=6,
-  right_pupil_sprite=39,
-  right_pupil_x=72,
-  right_pupil_y=6,
-  hitbox={x=0,y=5,w=32,h=8},
-  state="idle",
-  flashing_timer=0
- }
+   x=51,
+   y=6,
+   t=0,
+   lives=100,
+   dx=0.4,
+   ddx=0.05,
+   left_eye_sprite=36,
+   right_eye_sprite=36,
+   destination=51,
+   left_pupil_sprite=39,
+   left_pupil_x=53,
+   left_pupil_y=6,
+   right_pupil_sprite=39,
+   right_pupil_x=72,
+   right_pupil_y=6,
+   hitbox={x=0,y=5,w=32,h=8},
+   state="idle",
+   flashing_timer=0
+  }
 
  cloud = {
-  y=0,
-  sprite=80
- }
+   y=0,
+   sprite=80
+  }
 
- wind = {
-  dx=rnd(1.5)-0.5
- }
+ fireworks = {}
+ p = {
+   x=56,
+   y=112,
+   t=0,
+   lives=3,
+   sprite=0,
+   direction=0,
+   state="idle",
+   hitbox={x=2,y=5,w=12,h=10},
+   flashing_timer=0
+  }
 
- thunderbolts = {}
- rockets = {}
+ popups = {}
+ puffts = {}
  rain_fg = {}
  rain_bg = {}
- fireworks = {}
- puffts = {}
+ rockets = {}
  splashes = {}
+ thunderbolts = {}
  treats = {}
- popups = {}
- create_background_rain()
- create_foreground_rain()
+ wind = {
+   dx=rnd(1.5)-0.5
+  }
+
+ music(00)
+ create_rain_in_background()
+ create_rain_in_foreground()
 end
 -- end of initalization -------
 
@@ -179,6 +179,11 @@ end
 -------------------------------
 
 -- helper functions -----------
+function animate(thing)
+  thing.t=(thing.t+1)%thing.step
+  if (thing.t==0) thing.frame=thing.frame%#thing.sprite+1
+end
+
 function change_state(thing,new_state)
  thing.state=new_state
 end
@@ -264,15 +269,64 @@ function player_hit()
    scene.cycle(2)
  end
 end
-
-function animate(thing)
-  thing.t=(thing.t+1)%thing.step
-  if (thing.t==0) thing.frame=thing.frame%#thing.sprite+1
-end
 -------------------------------
 
 --- create functions ----------
-function create_background_rain()
+function create_firework(_x,_y)
+ sfx(sfx_fireworks)
+ for i=0,50 do
+  create_firework_particles(_x,_y)
+ end
+end
+
+function create_firework_particles(_x,_y)
+ local angle = rnd()
+ local speed = 0.5+rnd(1)
+ local new = {
+   x=_x,
+   y=_y,
+   dx=sin(angle)*speed,
+   dy=cos(angle)*speed,
+   age=flr(rnd(25))
+ }
+ add(fireworks,new)
+end
+
+function create_popup(x,y)
+ local popup = {
+   x=x,
+   y=y,
+   dy=-0.30,
+   t=0,
+   life=70,
+   copy=get_popup_copy()
+ }
+ add(popups, popup)
+end
+
+function get_popup_copy()
+  local copies = {"sweet","nice","awesome","yummy"}
+  local index = 1+flr(rnd(4))
+  local copy = copies[index]
+  if (p.lives<3) then copy = "extra life!" end
+  return copy
+end
+
+function create_pufft(x,y,dx)
+ local pufft = {
+   x=x+rnd(7),
+   y=y,
+   dx=dx,
+   dy=-rnd(0.4),
+   r=3+rnd(1),
+   age=0,
+   maxage=25,
+   col=7
+ }
+ add(puffts,pufft)
+end
+
+function create_rain_in_background()
  for i=1,256 do
   add(rain_bg, {
    x=rnd(384)-128,
@@ -283,7 +337,7 @@ function create_background_rain()
  end
 end
 
-function create_foreground_rain()
+function create_rain_in_foreground()
  for j=1,256 do
   add(rain_fg, {
    x=rnd(384)-128,
@@ -295,6 +349,70 @@ function create_foreground_rain()
    state="falling"
    })
  end
+end
+
+function create_rocket()
+ local rocket={
+  sp=53,
+  x=p.x+2,
+  y=p.y,
+  dx=0,
+  dy=-3,
+  ddy=0.01,
+  hitbox={x=2,y=0,w=4,h=8},
+  fire={}
+ }
+ add(rockets,rocket)
+ sfx(sfx_rocket)
+end
+
+function create_splash(x,y)
+ sfx(sfx_bounce)
+ for i=1, rnd(10)+6 do
+  local splash = {
+   x=x,
+   y=y,
+   dx=(rnd(2)-1),
+   dy=-rnd(2)-0.25,
+   r=(rnd(1)+0.50),
+   colour=12
+  }
+  if splash.r <= 0.8 then splash.colour = 7 end
+  add(splashes,splash)
+ end
+end
+
+function create_thunderbolt(x,y,dx,dy,age,radius)
+ local thunderbolt={
+  t=0,
+  sprite={48,49,50,51},
+  x=x, -- 16+rnd(96)
+  y=y, -- 18
+  dx=dx,
+  dy=dy,
+  age=age,
+  radius=radius,
+  dy_bounce=-2.5-rnd(1),
+  hitbox={x=0,y=0,w=radius*2-2,h=radius*2-2}
+ }
+ if t%2 == 0 then thunderbolt.dx=-thunderbolt.dx end
+ add(thunderbolts,thunderbolt)
+ sfx(sfx_thunder)
+end
+
+function create_treat(x,y,quantity)
+  for i=1, quantity do
+    local treat = {
+      x=quantity>1 and 8+rnd(120) or x,
+      y=quantity>1 and 8+rnd(16) or y,
+      dy=-1.6,
+      ddy=0.1,
+      sprite=40+flr(rnd(4)),
+      hitbox={x=0,y=0,w=8,h=8},
+    }
+    add(treats, treat)
+  end
+ sfx(sfx_create_treat)
 end
 
 function shoot_thunderbolt()
@@ -332,125 +450,9 @@ end
 function shoot_rocket()
   if btnp(5) and p.state!="electric" then create_rocket() end
 end
+-------------------------------
 
-function create_splash(x,y)
- sfx(sfx_bounce)
- for i=1, rnd(10)+6 do
-  local splash = {
-   x=x,
-   y=y,
-   dx=(rnd(2)-1),
-   dy=-rnd(2)-0.25,
-   r=(rnd(1)+0.50),
-   colour=12
-  }
-  if splash.r <= 0.8 then splash.colour = 7 end
-  add(splashes,splash)
- end
-end
-
-function create_pufft(x,y,dx)
- local pufft = {
-   x=x+rnd(7),
-   y=y,
-   dx=dx,
-   dy=-rnd(0.4),
-   r=3+rnd(1),
-   age=0,
-   maxage=25,
-   col=7
- }
- add(puffts,pufft)
-end
-
-function create_thunderbolt(x,y,dx,dy,age,radius)
- local thunderbolt={
-  t=0,
-  sprite={48,49,50,51},
-  x=x, -- 16+rnd(96)
-  y=y, -- 18
-  dx=dx,
-  dy=dy,
-  age=age,
-  radius=radius,
-  dy_bounce=-2.5-rnd(1),
-  hitbox={x=0,y=0,w=7,h=7}
- }
- if t%2 == 0 then thunderbolt.dx=-thunderbolt.dx end
- add(thunderbolts,thunderbolt)
- sfx(sfx_thunder)
-end
-
-function create_rocket()
- local rocket={
-  sp=53,
-  x=p.x+2,
-  y=p.y,
-  dx=0,
-  dy=-3,
-  ddy=0.01,
-  hitbox={x=2,y=0,w=4,h=8},
-  fire={}
- }
- add(rockets,rocket)
- sfx(sfx_rocket)
-end
-
-function create_firework(_x,_y)
- sfx(sfx_fireworks)
- for i=0,50 do
-  create_firework_particles(_x,_y)
- end
-end
-
-function create_firework_particles(_x,_y)
- local angle = rnd()
- local speed = 0.5+rnd(1)
- local new = {
-   x=_x,
-   y=_y,
-   dx=sin(angle)*speed,
-   dy=cos(angle)*speed,
-   age=flr(rnd(25))
- }
- add(fireworks,new)
-end
-
-function create_treat(x,y,quantity)
-  for i=1, quantity do
-    local treat = {
-      x=quantity>1 and 8+rnd(120) or x,
-      y=quantity>1 and 8+rnd(16) or y,
-      dy=-1.6,
-      ddy=0.1,
-      sprite=40+flr(rnd(4)),
-      hitbox={x=0,y=0,w=8,h=8},
-    }
-    add(treats, treat)
-  end
- sfx(sfx_create_treat)
-end
-
-function create_popup(x,y)
- local popup = {
-   x=x,
-   y=y,
-   dy=-0.30,
-   t=0,
-   life=70,
-   copy=get_popup_copy()
- }
- add(popups, popup)
-end
-
-function get_popup_copy()
-  local copies = {"sweet","nice","awesome","yummy"}
-  local index = 1+flr(rnd(4))
-  local copy = copies[index]
-  if (p.lives<3) then copy = "extra life!" end
-  return copy
-end
-
+--- reset functions ----------
 function reset_raindrop(raindrop)
  raindrop.x=rnd(384)-128
  raindrop.y=rnd(128)-128
@@ -472,12 +474,37 @@ function update_input()
  x_btn=btn(5)
 end
 
-function update_splash()
- for splash in all(splashes) do
-  splash.x+=splash.dx
-  splash.y+=splash.dy
-  splash.dy+=1
-  if (splash.y>130) del (splashes,splash)
+function update_clouds()
+  if (t%50<16) then
+   cloud.y=0
+   cloud.sprite=80
+   boss.y=10
+  elseif (t%50<32) then
+   cloud.y=-1
+   cloud.sprite=82
+   boss.y=8
+  else
+   cloud.y=-2
+   cloud.sprite=84
+   boss.y=6
+  end
+end
+
+function update_fireworks()
+ for p in all(fireworks) do
+  if p.age > 40
+   or p.y > 128
+   or p.y < 0
+   or p.x > 128
+   or p.x < 0
+   then
+   del(fireworks,p)
+  else
+   p.x+=p.dx
+   p.y+=p.dy
+   p.age+=1
+   p.dy+=0.075
+  end
  end
 end
 
@@ -500,33 +527,33 @@ function update_puffts()
  end
 end
 
-function update_wind()
- if t%20==0 then
-  wind.dx=wind.dx+rnd(1)-0.5
-  if wind.dx > 1 then
-   wind.dx = 1
+function update_rockets()
+ for r in all(rockets) do
+  r.dy+=r.ddy
+  r.x+=wind.dx*0.4
+  r.y+=r.dy
+  add(r.fire,{x=r.x+3,y=r.y+9})
+  srand(p.f)
+  for i=1,count(r.fire) do
+    local fire=r.fire[i]
+    fire.x+=(rnd(2)-1)
+    fire.y+=(rnd(2)-1)
   end
-  if wind.dx < -1 then
-   wind.dx = -1
+  if count(r.fire)>10 then
+    del(r.fire[1])
+  end
+  if r.y < -10 then
+   del(rockets,r)
   end
  end
 end
 
-function update_fireworks()
- for p in all(fireworks) do
-  if p.age > 40
-   or p.y > 128
-   or p.y < 0
-   or p.x > 128
-   or p.x < 0
-   then
-   del(fireworks,p)
-  else
-   p.x+=p.dx
-   p.y+=p.dy
-   p.age+=1
-   p.dy+=0.075
-  end
+function update_splash()
+ for splash in all(splashes) do
+  splash.x+=splash.dx
+  splash.y+=splash.dy
+  splash.dy+=1
+  if (splash.y>130) del (splashes,splash)
  end
 end
 
@@ -559,41 +586,16 @@ function update_thunderbolts()
  end
 end
 
-function update_rockets()
- for r in all(rockets) do
-  r.dy+=r.ddy
-  r.x+=wind.dx*0.4
-  r.y+=r.dy
-  add(r.fire,{x=r.x+3,y=r.y+9})
-  srand(p.f)
-  for i=1,count(r.fire) do
-    local fire=r.fire[i]
-    fire.x+=(rnd(2)-1)
-    fire.y+=(rnd(2)-1)
+function update_wind()
+ if t%20==0 then
+  wind.dx=wind.dx+rnd(1)-0.5
+  if wind.dx > 1 then
+   wind.dx = 1
   end
-  if count(r.fire)>10 then
-    del(r.fire[1])
-  end
-  if r.y < -10 then
-   del(rockets,r)
+  if wind.dx < -1 then
+   wind.dx = -1
   end
  end
-end
-
-function update_clouds()
-  if (t%50<16) then
-   cloud.y=0
-   cloud.sprite=80
-   boss.y=10
-  elseif (t%50<32) then
-   cloud.y=-1
-   cloud.sprite=82
-   boss.y=8
-  else
-   cloud.y=-2
-   cloud.sprite=84
-   boss.y=6
-  end
 end
 
 function get_boss_sprite(state)
@@ -971,7 +973,6 @@ function draw_thunderbolts()
       circfill(l.x,l.y,l.radius-1,7)
     else
       circ(l.x,l.y,l.radius,12)
-      circfill(l.x+2,l.y+2,2,12)
     end
    -- spr(l.sprite[l.frame],l.x,l.y)
 
