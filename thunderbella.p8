@@ -7,14 +7,14 @@ __lua__
 -- sfx
 sfx_rain=0
 sfx_game_on=1
-sfx_game_over=2
+sfx_game_over=9
 sfx_p_stun=3
 sfx_p_recover=4
 sfx_p_knocked_down=5
 sfx_thunder=6
 sfx_bounce=7
 sfx_fireworks=8
-sfx_rocket=9
+sfx_rocket=2
 sfx_create_treat=10
 sfx_eat_treat=11
 sfx_extra_life=12
@@ -72,6 +72,8 @@ function _init()
  rain_bg = {}
  rockets = {}
  splashes = {}
+ smoke={}
+ thunder=0
  thunderbolts = {}
  treats = {}
  wind = {
@@ -342,6 +344,22 @@ function create_glow(x,y)
  end
 end
 
+function create_smoke(x,y)
+ for i=1,1 do
+   local smoke_particle = {
+     x=x+rnd(4),
+     y=y+16,
+     dx=0.2,
+     dy=0.3+rnd(0.7),
+     r=2+rnd(2),
+     age=0,
+     maxage=50,
+     col=6
+   }
+   add(smoke, smoke_particle)
+ end
+end
+
 function create_rain_in_background()
  for i=1,256 do
   add(rain_bg, {
@@ -413,7 +431,6 @@ function create_thunderbolt(x,y,dx,dy,age,radius)
  }
  if t%2 == 0 then thunderbolt.dx=-thunderbolt.dx end
  add(thunderbolts,thunderbolt)
- sfx(sfx_thunder)
 end
 
 function create_treat(x,y,quantity)
@@ -432,6 +449,11 @@ function create_treat(x,y,quantity)
 end
 
 function shoot_thunderbolt()
+ -- if (thunder) and time_since_last_thunderbolt>8 then thunder=false end
+
+ thunder=thunder-1
+ if (thunder<0) then thunder=0 end
+
  if boss.lives < 90 then
    max_number_of_thunderbolts=3
    time_to_next_thunderbolt=100
@@ -458,6 +480,8 @@ function shoot_thunderbolt()
     local age = 0
     local radius = 8
     create_thunderbolt(x,y, dx, dy, age, radius)
+    thunder=8
+    sfx(sfx_thunder)
     time_since_last_thunderbolt=0
  end
  time_since_last_thunderbolt+=1
@@ -551,7 +575,7 @@ function update_glows()
     or g.x > 128
     or g.x < 0
     then
-    del(glows,g)
+     del(glows,g)
    else
     if g.age>=0 then
      g.x+=g.dx
@@ -562,11 +586,31 @@ function update_glows()
   end
 end
 
+function update_smoke()
+ for s in all(smoke) do
+  if s.age >= s.maxage
+    or s.y > 128
+    or s.y < 0
+    or s.x > 128
+    or s.x < 0
+  then
+     del(smoke,s)
+  else
+    if s.age>=0 then
+      s.x+=s.dx
+      s.y+=s.dy
+    end
+    s.age+=1
+  end
+ end
+end
+
 function update_rockets()
  for r in all(rockets) do
   r.dy+=r.ddy
   r.x+=wind.dx*0.4
   r.y+=r.dy
+  create_smoke(r.x,r.y)
   add(r.fire,{x=r.x+3,y=r.y+9})
   srand(p.f)
   for i=1,count(r.fire) do
@@ -854,6 +898,7 @@ function _update60()
  update_thunderbolts()
  update_puffts()
  update_glows()
+ update_smoke()
  update_splash()
  update_rockets()
  update_fireworks()
@@ -909,6 +954,22 @@ function draw_glow(g)
  agemult=1-(agemult*agemult)
  agemult=mid(0,agemult,1)
  circfill(g.x,g.y,g.r*agemult,g.col)
+end
+
+function draw_smoke()
+ for s in all(smoke) do
+  if s.age>=0 then
+    draw_smoke_particle(s)
+  end
+ end
+end
+
+function draw_smoke_particle(s)
+ local agemult=1
+ agemult=(s.age-5)/s.maxage
+ agemult=1-(agemult*agemult)
+ agemult=mid(0,agemult,1)
+ circfill(s.x,s.y,s.r*agemult,s.col)
 end
 
 function draw_fireworks()
@@ -1070,7 +1131,7 @@ end
 function draw_cloud_lives()
   -- print(boss.lives,3,3,2)
   print(boss.lives,2,2,13)
-  print(#glows,2,20,13)
+--  print(#glows,2,20,13)
 end
 
 function shake_screen()
@@ -1099,7 +1160,11 @@ function draw_popups()
 end
 
 function _draw()
- rectfill(0,0,128,128,13)
+ if (thunder>0) then
+  rectfill(0,0,128,128,7)
+ else
+  rectfill(0,0,128,128,13)
+ end
  draw_background_rain()
  draw_foreground_rain()
  scene.drawing()
@@ -1109,6 +1174,7 @@ function _draw()
  draw_splash()
  draw_player()
  draw_glows()
+ draw_smoke()
  draw_rockets()
  draw_fireworks()
  draw_lives()
@@ -1286,11 +1352,11 @@ __map__
 __sfx__
 001a071f0161105611096110f611126111361114611146111361112611116110f6110f6111061113611146111561117611176111761116611136111261111611116111061110611116111461117611196111a611
 010600000e0751077513075187751a0751c7751f07524775126000e60013600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00020000097010b7010d7010e7010f70110701117011170111700107000f7000e7000c7000a700087000770006700057000470003700027000170001700017000170001700017000170001700017000170001700
+0104000015614136171d6141c614266142661426614266153260432605305000e7000c7000a700087000770006700057000470003700027000170001700017000170001700017000170001700017000170001700
 0004000035663290531b6531b0531b0531264312043120430863308033080331f0030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0106000018064240641a054260541c044280441d034290341f0242b02408003017000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000200000e7710e7710e7710e7710e7710e7710e7710e7710c7710c7710a7710a7710877108771077710777105771057710476104761037510375101741017410173101731017210172101711017110171101711
-01060000240012400124003240031f0031b00317003120030e0030b00307003040030100301003010030100301003010030100301003010030000000000000000000000000000000000000000000000000000000
+0114000000670006500063000600006060060600606120030e0030b00307003040030100301003010030100301003010030100301003010030000000000000000000000000000000000000000000000000000000
 010a0000110631d063230002300002000010040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 010400000e7211a7411f7611f7411f00021000230001f000280003700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0008000002653166201e34616666213631664305623026110161101611016110161428300293002c3053f3033f303000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1413,4 +1479,3 @@ __music__
 00 00000000
 00 00000000
 00 00000000
-
