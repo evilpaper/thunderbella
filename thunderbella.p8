@@ -6,11 +6,14 @@ __lua__
 
 -- todo
 -- add "electric" lighting to thunderbolts
+-- make thunderbolts bounce, tweak speed to bullet hell
 -- add different rocket types
 -- add #rockets limitaion
 -- add splashing effects on walking and bouncing
 -- try to get back some rain sound
 -- make boss less stupid
+-- add highlight on title and power-ups
+-- add age to power-ups
 
 -- sfx
 sfx_rain=0
@@ -37,7 +40,7 @@ function _init()
 
  boss = {
    x=51,
-   y=6,
+   y=7,
    t=0,
    lives=10,
    dx=0.4,
@@ -236,8 +239,8 @@ function check_collision_rocket_vs_thunderbolt()
      create_firework(rocket.x,rocket.y)
      -- shake+=0.2
      if (thunderbolt.age==0) then
-      create_thunderbolt(thunderbolt.x,thunderbolt.y, 1, -1.6, 1, 4)
-      create_thunderbolt(thunderbolt.x,thunderbolt.y, -1, -1.6, 1, 4)
+      create_thunderbolt(thunderbolt.x,thunderbolt.y, thunderbolt.dx, -1.2, 1, 4)
+      create_thunderbolt(thunderbolt.x,thunderbolt.y, -thunderbolt.dx, -1.2, 1, 4)
      end
      create_explosion(thunderbolt.x,thunderbolt.y)
      create_smoke(thunderbolt.x,thunderbolt.y-16,0.1,-0.3,100)
@@ -569,8 +572,8 @@ function shoot_thunderbolt()
 for i=1, wave do
     local x = 16+rnd(96)
     local y = 18
-    local dx = rnd(1.2)+0.4
-    local dy = rnd(1.4)+0.4
+    local dx = rnd(1)+0.2
+    local dy = rnd(1.2)+0.2
     local age = 0
     local radius = 8
     create_thunderbolt(x,y, dx, dy, age, radius)
@@ -613,15 +616,21 @@ function update_clouds()
   if (t%50<16) then
    cloud.y=0
    cloud.sprite=80
-   boss.y=10
+   boss.y=11
+   boss.left_pupil_y=boss.y
+   boss.right_pupil_y=boss.y
   elseif (t%50<32) then
    cloud.y=-1
    cloud.sprite=82
-   boss.y=8
+   boss.y=9
+   boss.left_pupil_y=boss.y
+   boss.right_pupil_y=boss.y
   else
    cloud.y=-2
    cloud.sprite=84
-   boss.y=6
+   boss.y=7
+   boss.left_pupil_y=boss.y
+   boss.right_pupil_y=boss.y
   end
 end
 
@@ -860,8 +869,8 @@ function update_boss()
     boss.right_eye_sprite=get_boss_sprite("laughing")
   end
 
-  boss.left_pupil_y=boss.y
-  boss.right_pupil_y=boss.y
+  -- boss.left_pupil_y=boss.y
+  -- boss.right_pupil_y=boss.y
   boss.t+=1
   boss.x+=boss.dx
   boss.dx+=boss.ddx
@@ -1165,6 +1174,15 @@ function draw_cloud()
   spr(cloud.sprite,96,28+cloud.y,2,1)
   spr(cloud.sprite,108,21+cloud.y,2,1)
   spr(cloud.sprite,118,18+cloud.y,2,1)
+
+  circfill(6,-14+cloud.y,16,0)
+  circfill(28,-12+cloud.y,16,0)
+  circfill(50,-10+cloud.y,16,0)
+  circfill(70,-11+cloud.y,16,0)
+  circfill(90,-13+cloud.y,16,0)
+  circfill(108,-13+cloud.y,16,0)
+  circfill(122,-15+cloud.y,16,0)
+
 end
 
 function draw_boss_eyes()
@@ -1353,8 +1371,8 @@ d0000000000000000000000000000000000000000000000000000000000000000078e0660088bb0b
 ddd0000000000000d000000000000000d000000000000000000000000000000007788760087e88b00999999044744474e7f8efe8000000000000000000000000
 d66ddd0000000000ddd0000000000000dd0000000000000000000000000000007f777ff70788bb8b99bbbb9944924492efeefeee000000000000000000000000
 d67666ddddddd000d67ddd0000000000dddd00000000000000000000000000007ffff447e98ebb8b9b4b88b944424442eeeeeee8000000000000000000000000
-0d7777666666d0000d7766ddddddd0000d77ddd000ddd00000511680000ddd000744447088898888b444888b444244420eeeee82000000000000000000000000
-0d677777777d00000d677766776d00000d67776ddddd0000000511000051178000722600888888424aaaaaa44444444400eeee20000000000000000000000000
+0d7777666666d0000d7766ddddddd0000d77dd0000ddd00000511680000ddd000744447088898888b444888b444244420eeeee82000000000000000000000000
+0d677777777d00000d677766776d00000d6776dddddd0000000511000051178000722600888888424aaaaaa44444444400eeee20000000000000000000000000
 00dd67776dd0000000dd67776dd0000000dd67776dd0000000000000005112000007600089888420aaaaaaaa05500550000ee200000000000000000000000000
 0000ddddd00000000000ddddd00000000000ddddd000000000000000000000000077760008842000999999990ff00ff000002000000000000000000000000000
 000000000000000000000000000000000ee0ee000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000
